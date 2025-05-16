@@ -1,7 +1,9 @@
 <!-- BEGIN_TF_DOCS -->
-# terraform-azurerm-avm-template
+# terraform-azurerm-gkvm-res-iot-hub
 
-This is a template repo for Terraform Azure Verified Modules.
+This Terraform module provides a comprehensive, production-ready solution for deploying and managing Azure IoT Hub resources using Azure Verified Modules (AVM) standards. It supports advanced configuration scenarios, including network rules, private endpoints, diagnostic settings, managed identities, and routing, making it suitable for secure and scalable IoT workloads in enterprise environments.
+
+The module is designed for flexibility and compliance, enabling integration with Azure Monitor, custom role assignments, customer-managed keys, and fine-grained access control. It follows best practices for infrastructure-as-code, ensuring repeatable, auditable, and maintainable deployments of Azure IoT Hub and its associated resources.
 
 <!-- markdownlint-disable MD033 -->
 ## Requirements
@@ -215,8 +217,8 @@ Default: `true`
 
 ### <a name="input_enable_telemetry"></a> [enable\_telemetry](#input\_enable\_telemetry)
 
-Description: This variable controls whether or not telemetry is enabled for the module.  
-For more information see <https://aka.ms/avm/telemetryinfo>.  
+Description: This variable controls whether or not telemetry is enabled for the module.
+For more information see <https://aka.ms/avm/telemetryinfo>.
 If it is set to false, then no telemetry will be collected.
 
 Type: `bool`
@@ -254,7 +256,7 @@ Default:
 
 ### <a name="input_ip_filter_rules"></a> [ip\_filter\_rules](#input\_ip\_filter\_rules)
 
-Description: List of IP filter rules for the IoT Hub.  
+Description: List of IP filter rules for the IoT Hub.
 Each object contains:
 - `action` (string, required): The action for the rule (e.g., "Accept" or "Reject").
 - `filter_name` (string, required): The name of the filter rule.
