@@ -11,7 +11,6 @@ terraform {
       source  = "Azure/azapi"
       version = "~> 2.0"
     }
-    # TODO: Ensure all required providers are listed here and the version property includes a constraint on the maximum major version.
     azurerm = {
       source  = "hashicorp/azurerm"
       version = "~> 4.0"
@@ -28,6 +27,7 @@ terraform {
 }
 
 provider "azurerm" {
+  storage_use_azuread = true
   features {}
 }
 
@@ -71,6 +71,73 @@ resource "azurerm_resource_group" "this" {
   name     = module.naming.resource_group.name_unique
 }
 
+module "storage_account" {
+  source  = "Azure/avm-res-storage-storageaccount/azurerm"
+  version = "~> 0.6.0"
+
+  location                 = azurerm_resource_group.this.location
+  name                     = module.naming.storage_account.name_unique
+  resource_group_name      = azurerm_resource_group.this.name
+  account_replication_type = "LRS"
+  account_tier             = "Standard"
+  containers = {
+    iothub = {
+      name = "iothub"
+      metadata = {
+        description = "This is the iothub container"
+      }
+      role_assignments = {
+        iothub = {
+          principal_id               = module.user_assigned_identity.principal_id
+          role_definition_id_or_name = "Storage Blob Data Contributor"
+        }
+      }
+    }
+  }
+  network_rules                 = null
+  public_network_access_enabled = true
+  shared_access_key_enabled     = true
+  tags                          = local.tags
+
+  depends_on = [module.user_assigned_identity]
+}
+
+module "eventhub" {
+  source  = "Azure/avm-res-eventhub-namespace/azurerm"
+  version = "~> 0.1.0"
+
+  location            = azurerm_resource_group.this.location
+  name                = module.naming.eventhub.name_unique
+  resource_group_name = azurerm_resource_group.this.name
+  event_hubs = {
+    iothub = {
+      resource_group_name = azurerm_resource_group.this.name
+      namespace_name      = module.naming.eventhub.name_unique
+      partition_count     = 4
+      message_retention   = 1
+      status              = "Active"
+      role_assignments = {
+        iothub = {
+          principal_id               = module.user_assigned_identity.principal_id
+          role_definition_id_or_name = "Azure Event Hubs Data Sender"
+        }
+      }
+    }
+  }
+  public_network_access_enabled = true
+  tags                          = local.tags
+}
+
+module "user_assigned_identity" {
+  source  = "Azure/avm-res-managedidentity-userassignedidentity/azurerm"
+  version = "~> 0.3.0"
+
+  location            = azurerm_resource_group.this.location
+  name                = module.naming.user_assigned_identity.name_unique
+  resource_group_name = azurerm_resource_group.this.name
+  tags                = local.tags
+}
+
 # This is the module call
 module "iot_hub" {
   source = "../../"
@@ -83,7 +150,54 @@ module "iot_hub" {
     capacity = 1
   }
   enable_telemetry = var.enable_telemetry # see variables.tf
-  tags             = local.tags
+  managed_identities = {
+    user_assigned_resource_ids = [module.user_assigned_identity.resource_id]
+  }
+  routing = {
+    endpoints = {
+      event_hubs = [
+        {
+          name                     = "eventHub"
+          event_hub_namespace_name = module.eventhub.resource.name
+          authentication_type      = "identityBased"
+          entity_path              = module.eventhub.resource_eventhubs.iothub.name
+          identity = {
+            user_assigned_identity = module.user_assigned_identity.resource_id
+          }
+        }
+      ]
+      storage_containers = [
+        {
+          name                = "iothub"
+          container_name      = "iothub"
+          authentication_type = "identityBased"
+          endpoint_uri        = module.storage_account.resource.primary_blob_endpoint
+          identity = {
+            user_assigned_identity = module.user_assigned_identity.resource_id
+          }
+        }
+      ]
+    }
+    routes = [
+      {
+        name           = "eventHub"
+        endpoint_names = ["eventHub"]
+        source         = "DeviceMessages"
+        condition      = "true"
+        is_enabled     = true
+      },
+      {
+        name           = "storage"
+        endpoint_names = ["iothub"]
+        source         = "DeviceMessages"
+        condition      = "true"
+        is_enabled     = true
+      }
+    ]
+  }
+  tags = local.tags
+
+  depends_on = [module.storage_account, module.eventhub, module.user_assigned_identity]
 }
 ```
 
@@ -136,6 +250,12 @@ No outputs.
 
 The following Modules are called:
 
+### <a name="module_eventhub"></a> [eventhub](#module\_eventhub)
+
+Source: Azure/avm-res-eventhub-namespace/azurerm
+
+Version: ~> 0.1.0
+
 ### <a name="module_iot_hub"></a> [iot\_hub](#module\_iot\_hub)
 
 Source: ../../
@@ -153,6 +273,18 @@ Version: ~> 0.3
 Source: Azure/avm-utl-regions/azurerm
 
 Version: ~> 0.1
+
+### <a name="module_storage_account"></a> [storage\_account](#module\_storage\_account)
+
+Source: Azure/avm-res-storage-storageaccount/azurerm
+
+Version: ~> 0.6.0
+
+### <a name="module_user_assigned_identity"></a> [user\_assigned\_identity](#module\_user\_assigned\_identity)
+
+Source: Azure/avm-res-managedidentity-userassignedidentity/azurerm
+
+Version: ~> 0.3.0
 
 <!-- markdownlint-disable-next-line MD041 -->
 ## Data Collection

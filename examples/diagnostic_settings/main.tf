@@ -1,9 +1,14 @@
 terraform {
-  required_version = "~> 1.5"
+  required_version = ">= 1.9, < 2.0"
   required_providers {
+    azapi = {
+      source  = "Azure/azapi"
+      version = "~> 2.0"
+    }
+    # TODO: Ensure all required providers are listed here and the version property includes a constraint on the maximum major version.
     azurerm = {
       source  = "hashicorp/azurerm"
-      version = "~> 4.21"
+      version = "~> 4.0"
     }
     modtm = {
       source  = "azure/modtm"
@@ -15,12 +20,25 @@ terraform {
     }
   }
 }
-
 provider "azurerm" {
   features {}
 }
 
+provider "modtm" {
+  enabled = true
 
+}
+
+provider "azapi" {}
+
+locals {
+  tags = {
+    environment = "dev"
+    cost_center = "12345"
+    owner       = "dev-team"
+    project     = "iot-hub"
+  }
+}
 ## Section to provide a random Azure region for the resource group
 # This allows us to randomize the region for the resource group.
 module "regions" {
@@ -47,17 +65,30 @@ resource "azurerm_resource_group" "this" {
   name     = module.naming.resource_group.name_unique
 }
 
-# This is the module call
-# Do not specify location here due to the randomization above.
-# Leaving location as `null` will cause the module to use the resource group location
-# with a data source.
-module "test" {
-  source = "../../"
-  # source             = "Azure/avm-<res/ptn>-<name>/azurerm"
-  # ...
+resource "azurerm_log_analytics_workspace" "diag" {
   location            = azurerm_resource_group.this.location
-  name                = "TODO" # TODO update with module.naming.<RESOURCE_TYPE>.name_unique
+  name                = "diag${module.naming.log_analytics_workspace.name_unique}"
   resource_group_name = azurerm_resource_group.this.name
+  tags                = local.tags
+}
 
+# This is the module call
+module "iot_hub" {
+  source = "../../"
+
+  location          = azurerm_resource_group.this.location
+  name              = module.naming.iothub.name_unique
+  resource_group_id = azurerm_resource_group.this.id
+  sku = {
+    name     = "S1"
+    capacity = 1
+  }
+  diagnostic_settings = {
+    diag = {
+      name                  = "aml${module.naming.monitor_diagnostic_setting.name_unique}"
+      workspace_resource_id = azurerm_log_analytics_workspace.diag.id
+    }
+  }
   enable_telemetry = var.enable_telemetry # see variables.tf
+  tags             = local.tags
 }
