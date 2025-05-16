@@ -11,7 +11,6 @@ terraform {
       source  = "Azure/azapi"
       version = "~> 2.0"
     }
-    # TODO: Ensure all required providers are listed here and the version property includes a constraint on the maximum major version.
     azurerm = {
       source  = "hashicorp/azurerm"
       version = "~> 4.0"
@@ -71,6 +70,41 @@ resource "azurerm_resource_group" "this" {
   name     = module.naming.resource_group.name_unique
 }
 
+module "virtual_network" {
+  source  = "Azure/avm-res-network-virtualnetwork/azurerm"
+  version = "~> 0.7"
+
+  address_space       = ["192.168.0.0/24"]
+  location            = azurerm_resource_group.this.location
+  resource_group_name = azurerm_resource_group.this.name
+  name                = module.naming.virtual_network.name_unique
+  subnets = {
+    private_endpoints = {
+      name                              = "private_endpoints"
+      address_prefixes                  = ["192.168.0.0/24"]
+      private_endpoint_network_policies = "Disabled"
+      service_endpoints                 = null
+    }
+  }
+  tags = local.tags
+}
+
+module "private_dns_iot_hub" {
+  source  = "Azure/avm-res-network-privatednszone/azurerm"
+  version = "~> 0.2"
+
+  domain_name         = "privatelink.servicebus.windows.net"
+  resource_group_name = azurerm_resource_group.this.name
+  enable_telemetry    = var.enable_telemetry
+  tags                = local.tags
+  virtual_network_links = {
+    dnslink = {
+      vnetlinkname = "privatelink.servicebus.windows.net"
+      vnetid       = module.virtual_network.resource.id
+    }
+  }
+}
+
 # This is the module call
 module "iot_hub" {
   source = "../../"
@@ -83,7 +117,25 @@ module "iot_hub" {
     capacity = 1
   }
   enable_telemetry = var.enable_telemetry # see variables.tf
-  tags             = local.tags
+  network_rule_sets = {
+    default_action                       = "Deny"
+    apply_to_built_in_event_hub_endpoint = false
+    ip_rules = [
+      {
+        action      = "Allow"
+        ip_mask     = "XXX.XXX.XXX.XXX/32" # Replace with your IP address
+        filter_name = "test"
+      }
+    ]
+  }
+  private_endpoints = {
+    iothub = {
+      subnet_resource_id            = module.virtual_network.subnets.private_endpoints.resource_id
+      private_dns_zone_resource_ids = [module.private_dns_iot_hub.resource_id]
+    }
+  }
+  private_endpoints_manage_dns_zone_group = true
+  tags                                    = local.tags
 }
 ```
 
@@ -148,11 +200,23 @@ Source: Azure/naming/azurerm
 
 Version: ~> 0.3
 
+### <a name="module_private_dns_iot_hub"></a> [private\_dns\_iot\_hub](#module\_private\_dns\_iot\_hub)
+
+Source: Azure/avm-res-network-privatednszone/azurerm
+
+Version: ~> 0.2
+
 ### <a name="module_regions"></a> [regions](#module\_regions)
 
 Source: Azure/avm-utl-regions/azurerm
 
 Version: ~> 0.1
+
+### <a name="module_virtual_network"></a> [virtual\_network](#module\_virtual\_network)
+
+Source: Azure/avm-res-network-virtualnetwork/azurerm
+
+Version: ~> 0.7
 
 <!-- markdownlint-disable-next-line MD041 -->
 ## Data Collection
