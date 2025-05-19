@@ -37,6 +37,17 @@ resource "azapi_resource" "this" {
           ttlAsIso8601          = var.messaging_endpoints.file_notifications.ttl_as_iso8601
         } : null
       } : null
+      storageEndpoints = var.storage_endpoints != null || var.enable_file_upload_notifications == true ? {
+        "$default" = {
+          containerName      = var.storage_endpoints.container_name
+          sasTtlAsIso8601    = var.storage_endpoints.sas_ttl_as_iso8601
+          connectionString   = var.storage_endpoints.connection_string
+          authenticationType = var.storage_endpoints.authentication_type
+          identity = var.storage_endpoints.identity != null ? {
+            userAssignedIdentity = var.storage_endpoints.user_assigned_identity
+          } : null
+        }
+      } : null
       minTlsVersion = var.min_tls_version != null ? var.min_tls_version : null
       networkRuleSets = var.network_rule_sets != null ? {
         applyToBuiltInEventHubEndpoint = var.network_rule_sets.apply_to_built_in_event_hub_endpoint
@@ -151,7 +162,9 @@ resource "azapi_resource" "this" {
           }
         ] : []
       }
+      privateEndpointConnections = []
     }
+    etag = null
     sku = {
       capacity = var.sku.capacity
       name     = var.sku.name
@@ -160,7 +173,11 @@ resource "azapi_resource" "this" {
   location  = var.location
   name      = var.name
   parent_id = local.resource_group_id
-  tags      = var.tags
+  response_export_values = [
+    "body.properties.privateEndpointConnections",
+
+  ]
+  tags = var.tags
 
   ## Resources supporting both SystemAssigned and UserAssigned
   dynamic "identity" {
@@ -180,18 +197,14 @@ resource "azapi_resource" "this" {
     }
   }
 
-  # response_export_values = [
-  #   "body.properties.eventHubEndpoints.events.endpoint",
-  #   "body.properties.eventHubEndpoints.events.partitionIds",
-  #   "body.properties.eventHubEndpoints.events.path",
-  #   "body.properties.rootCertificate.lastUpdatedTime",
-  # ]
   lifecycle {
     ignore_changes = [
       body.properties.eventHubEndpoints.events.endpoint,
       body.properties.eventHubEndpoints.events.partitionIds,
       body.properties.eventHubEndpoints.events.path,
       body.properties.rootCertificate.lastUpdatedTime,
+      body.properties.privateEndpointConnections,
+      body.etag,
     ]
   }
 }

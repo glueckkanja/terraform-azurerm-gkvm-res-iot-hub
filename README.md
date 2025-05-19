@@ -1,5 +1,5 @@
 <!-- BEGIN_TF_DOCS -->
-# terraform-azurerm-gkvm-res-iot-hub
+# terraform-azurerm-avm-template
 
 This Terraform module provides a comprehensive, production-ready solution for deploying and managing Azure IoT Hub resources using Azure Verified Modules (AVM) standards. It supports advanced configuration scenarios, including network rules, private endpoints, diagnostic settings, managed identities, and routing, making it suitable for secure and scalable IoT workloads in enterprise environments.
 
@@ -643,6 +643,40 @@ Default:
     "source": "DeviceMessages"
   },
   "routes": []
+}
+```
+
+### <a name="input_storage_endpoints"></a> [storage\_endpoints](#input\_storage\_endpoints)
+
+Description: Storage endpoints configuration.
+- `$default` (object, required):
+    - `sas_ttl_as_iso8601` (string, required): SAS token time-to-live (ISO8601 format).
+    - `connection_string` (string, required): Connection string for the storage account.
+    - `container_name` (string, required): Name of the storage container.
+
+Type:
+
+```hcl
+object({
+    authentication_type = optional(string)
+    sas_ttl_as_iso8601  = optional(string)
+    connection_string   = string
+    container_name      = string
+    identity = optional(object({
+      user_assigned_identity = string # Required if provided
+    }), null)
+  })
+```
+
+Default:
+
+```json
+{
+  "authentication_type": "keyBased",
+  "connection_string": "",
+  "container_name": "",
+  "identity": null,
+  "sas_ttl_as_iso8601": "PT1H"
 }
 ```
 

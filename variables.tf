@@ -549,6 +549,32 @@ Routing configuration for the IoT Hub.
 DESCRIPTION
 }
 
+variable "storage_endpoints" {
+  type = object({
+    authentication_type = optional(string)
+    sas_ttl_as_iso8601  = optional(string)
+    connection_string   = string
+    container_name      = string
+    identity = optional(object({
+      user_assigned_identity = string # Required if provided
+    }), null)
+  })
+  default = {
+    sas_ttl_as_iso8601  = "PT1H"
+    connection_string   = ""
+    container_name      = ""
+    authentication_type = "keyBased"
+    identity            = null
+  }
+  description = <<DESCRIPTION
+Storage endpoints configuration.
+- `$default` (object, required):
+    - `sas_ttl_as_iso8601` (string, required): SAS token time-to-live (ISO8601 format).
+    - `connection_string` (string, required): Connection string for the storage account.
+    - `container_name` (string, required): Name of the storage container.
+DESCRIPTION
+}
+
 # tflint-ignore: terraform_unused_declarations
 variable "tags" {
   type        = map(string)
