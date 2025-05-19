@@ -628,3 +628,10 @@ Storage endpoints configuration.
 - `identity` (object, optional): User assigned identity for authentication, if applicable.
 DESCRIPTION
 }
+
+# tflint-ignore: terraform_unused_declarations
+variable "tags" {
+  type        = map(string)
+  default     = null
+  description = "(Optional) Tags of the resource."
+}

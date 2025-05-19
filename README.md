@@ -734,6 +734,14 @@ Default:
 }
 ```
 
+### <a name="input_tags"></a> [tags](#input\_tags)
+
+Description: (Optional) Tags of the resource.
+
+Type: `map(string)`
+
+Default: `null`
+
 ## Outputs
 
 The following outputs are exported:
