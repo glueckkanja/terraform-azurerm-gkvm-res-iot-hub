@@ -528,24 +528,104 @@ variable "routing" {
   }
   description = <<DESCRIPTION
 Routing configuration for the IoT Hub.
-- `endpoints` (object, optional):
+
+- `endpoints` (object, optional): Custom endpoints for routing.
     - `cosmosdb_sql_containers` (list of object, optional): Cosmos DB SQL container endpoints.
-    - `event_hubs` (list of object, required): Event Hub endpoints.
-    - `service_bus_queues` (list of object, required): Service Bus queue endpoints.
-    - `service_bus_topics` (list of object, required): Service Bus topic endpoints.
-    - `storage_containers` (list of object, required): Storage container endpoints.
+        - `authentication_type` (string, required): Authentication type for the Cosmos DB endpoint.
+        - `container_name` (string, required): Name of the Cosmos DB container.
+        - `database_name` (string, required): Name of the Cosmos DB database.
+        - `endpoint_uri` (string, required): URI of the Cosmos DB endpoint.
+        - `identity` (object, optional): User assigned identity for authentication.
+        - `name` (string, required): Name of the endpoint.
+        - `partition_key_name` (string, optional): Partition key name.
+        - `partition_key_template` (string, optional): Partition key template.
+        - `primary_key` (string, optional): Primary key for authentication.
+        - `resource_group` (string, optional): Resource group of the Cosmos DB.
+        - `secondary_key` (string, optional): Secondary key for authentication.
+        - `subscription_id` (string, optional): Subscription ID.
+    - `event_hubs` (list of object, optional): Event Hub endpoints.
+        - `name` (string, required): Name of the Event Hub endpoint.
+        - `authentication_type` (string, optional): Authentication type.
+        - `connection_string` (string, optional): Connection string.
+        - `endpoint_uri` (string, optional): URI of the Event Hub endpoint.
+        - `event_hub_namespace_name` (string, optional): Namespace name.
+        - `entity_path` (string, optional): Entity path.
+        - `identity` (object, optional): User assigned identity for authentication.
+        - `resource_group` (string, optional): Resource group of the Event Hub.
+        - `subscription_id` (string, optional): Subscription ID.
+    - `service_bus_queues` (list of object, optional): Service Bus queue endpoints.
+        - `name` (string, required): Name of the Service Bus queue.
+        - `authentication_type` (string, optional): Authentication type.
+        - `connection_string` (string, optional): Connection string.
+        - `endpoint_uri` (string, optional): URI of the Service Bus queue.
+        - `entity_path` (string, optional): Entity path.
+        - `identity` (object, optional): User assigned identity for authentication.
+        - `resource_group` (string, optional): Resource group of the Service Bus.
+        - `subscription_id` (string, optional): Subscription ID.
+    - `service_bus_topics` (list of object, optional): Service Bus topic endpoints.
+        - `name` (string, required): Name of the Service Bus topic.
+        - `authentication_type` (string, optional): Authentication type.
+        - `connection_string` (string, optional): Connection string.
+        - `endpoint_uri` (string, optional): URI of the Service Bus topic.
+        - `entity_path` (string, optional): Entity path.
+        - `identity` (object, optional): User assigned identity for authentication.
+        - `resource_group` (string, optional): Resource group of the Service Bus.
+        - `subscription_id` (string, optional): Subscription ID.
+    - `storage_containers` (list of object, optional): Storage container endpoints.
+        - `container_name` (string, required): Name of the storage container.
+        - `name` (string, required): Name of the endpoint.
+        - `connection_string` (string, optional): Connection string.
+        - `authentication_type` (string, optional): Authentication type.
+        - `batch_frequency_in_seconds` (number, optional): Batch frequency in seconds.
+        - `encoding` (string, optional): Encoding type.
+        - `endpoint_uri` (string, optional): URI of the storage endpoint.
+        - `file_name_format` (string, optional): File name format.
+        - `identity` (object, optional): User assigned identity for authentication.
+        - `max_chunk_size_in_bytes` (number, optional): Maximum chunk size in bytes.
+        - `resource_group` (string, optional): Resource group of the storage account.
+        - `subscription_id` (string, optional): Subscription ID.
+
 - `fallback_route` (object, optional): Fallback route configuration.
     - `condition` (string, optional): Condition for the fallback route.
-    - `endpoint_names` (list of string, required): Endpoint names for the fallback route.
-    - `is_enabled` (bool, required): Whether the fallback route is enabled.
+    - `endpoint_names` (list of string, optional): Endpoint names for the fallback route.
+    - `is_enabled` (bool, optional): Whether the fallback route is enabled.
     - `name` (string, optional): Name of the fallback route.
-    - `source` (string, required): Source of the fallback route.
+    - `source` (string, optional): Source of the fallback route.
+
 - `routes` (list of object, optional): Custom routes.
     - `condition` (string, optional): Condition for the route.
     - `endpoint_names` (list of string, optional): Endpoint names for the route.
     - `is_enabled` (bool, optional): Whether the route is enabled.
     - `name` (string, required): Name of the route.
     - `source` (string, required): Source of the route.
+DESCRIPTION
+}
+
+variable "storage_endpoints" {
+  type = object({
+    authentication_type = optional(string)
+    sas_ttl_as_iso8601  = optional(string)
+    connection_string   = string
+    container_name      = string
+    identity = optional(object({
+      user_assigned_identity = string # Required if provided
+    }), null)
+  })
+  default = {
+    sas_ttl_as_iso8601  = "PT1H"
+    connection_string   = ""
+    container_name      = ""
+    authentication_type = "keyBased"
+    identity            = null
+  }
+  description = <<DESCRIPTION
+Storage endpoints configuration.
+
+- `authentication_type` (string, optional): The authentication type for the storage endpoint. Defaults to `keyBased`.
+- `sas_ttl_as_iso8601` (string, optional): SAS token time-to-live in ISO8601 format. Defaults to `PT1H`.
+- `connection_string` (string, required): Connection string for the storage account.
+- `container_name` (string, required): Name of the storage container.
+- `identity` (object, optional): User assigned identity for authentication, if applicable.
 DESCRIPTION
 }
 
