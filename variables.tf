@@ -15,9 +15,9 @@ variable "name" {
 }
 
 # This is required for most resource modules
-variable "resource_group_id" {
+variable "resource_group_name" {
   type        = string
-  description = "The resource group ID where the resource will be created."
+  description = "The resource group name where the resource will be created."
   nullable    = false
 }
 

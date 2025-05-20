@@ -136,9 +136,9 @@ module "user_assigned_identity" {
 module "iot_hub" {
   source = "../../"
 
-  location          = azurerm_resource_group.this.location
-  name              = module.naming.iothub.name_unique
-  resource_group_id = azurerm_resource_group.this.id
+  location            = azurerm_resource_group.this.location
+  name                = module.naming.iothub.name_unique
+  resource_group_name = azurerm_resource_group.this.name
   sku = {
     name     = "S1"
     capacity = 1
