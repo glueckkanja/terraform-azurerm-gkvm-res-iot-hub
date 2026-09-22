@@ -8,18 +8,25 @@ on:
     branches:
       - main
 
+# Read-only: the check only inspects the checked-out sources.
 permissions:
   contents: read
 
+concurrency:
+  group: version-check-${{ github.event.pull_request.head.repo.full_name }}/${{ github.head_ref || github.run_id }}
+  cancel-in-progress: true
+
 jobs:
   version-check:
+    name: version-check
     if: github.event.repository.name != 'terraform-azurerm-avm-template'
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 #v4.2.2
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
       - name: Check version
-        uses: Azure/terraform-azurerm-avm-template/.github/actions/version-check@main
+        # Local copy of the (now removed) Azure/terraform-azurerm-avm-template action.
+        uses: $/.github/actions/version-check
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
