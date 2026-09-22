@@ -73,12 +73,12 @@ resource "azurerm_resource_group" "this" {
 
 module "virtual_network" {
   source  = "Azure/avm-res-network-virtualnetwork/azurerm"
-  version = "~> 0.7"
+  version = "~> 0.22.0"
 
-  address_space       = ["192.168.0.0/24"]
-  location            = azurerm_resource_group.this.location
-  resource_group_name = azurerm_resource_group.this.name
-  name                = module.naming.virtual_network.name_unique
+  address_space = ["192.168.0.0/24"]
+  location      = azurerm_resource_group.this.location
+  parent_id     = azurerm_resource_group.this.id
+  name          = module.naming.virtual_network.name_unique
   subnets = {
     private_endpoints = {
       name                              = "private_endpoints"
@@ -194,7 +194,7 @@ Version: ~> 0.1
 
 Source: Azure/avm-res-network-virtualnetwork/azurerm
 
-Version: ~> 0.7
+Version: ~> 0.22.0
 
 <!-- markdownlint-disable-next-line MD041 -->
 ## Data Collection
